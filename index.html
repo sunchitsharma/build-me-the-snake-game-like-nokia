@@ -7,9 +7,11 @@
   <style>
     :root {
       --bg: #0f380f;
-      --grid: #306230;
-      --snake: #8bac0f;
-      --food: #9bbc0f;
+      --grid: #1f3a1f;
+      --snake: #7fbf52;
+      --snake-dark: #5a923a;
+      --snake-light: #9bdb6b;
+      --food: #e4c441;
       --text: #e0f2c1;
     }
     * { box-sizing: border-box; }
@@ -19,7 +21,9 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #0a0a0a, #3a0000, #0a0a0a);
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.04), transparent 30%),
+                  radial-gradient(circle at 80% 80%, rgba(255,255,255,0.03), transparent 25%),
+                  linear-gradient(135deg, #0a0a0a, #3a0000, #0a0a0a);
       font-family: 'Courier New', monospace;
       color: var(--text);
     }
@@ -46,9 +50,49 @@
       padding: 6px;
       border: 4px solid #082008;
     }
-    .cell { width: 16px; height: 16px; background: var(--grid); }
-    .snake { background: var(--snake); }
-    .food { background: var(--food); }
+    .cell { width: 16px; height: 16px; background: var(--grid); border-radius: 2px; position: relative; overflow: hidden; }
+    .snake {
+      background: linear-gradient(135deg, var(--snake-dark), var(--snake));
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.35);
+    }
+    .snake::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.25), transparent 65%);
+      opacity: 0.6;
+      border-radius: 4px;
+    }
+    .snake-body {
+      background: linear-gradient(90deg, var(--snake-dark), var(--snake-light));
+    }
+    .snake-tail {
+      background: linear-gradient(135deg, var(--snake), var(--snake-dark));
+      border-radius: 5px;
+    }
+    .snake-head {
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 40%),
+                  radial-gradient(circle at 70% 30%, rgba(255,255,255,0.4), transparent 40%),
+                  linear-gradient(135deg, var(--snake-light), var(--snake-dark));
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .snake-head::before, .snake-head::after {
+      content: '';
+      position: absolute;
+      width: 4px; height: 4px;
+      background: #1a1a1a;
+      border-radius: 50%;
+      top: 4px;
+    }
+    .snake-head::before { left: 3px; }
+    .snake-head::after { right: 3px; }
+    .food {
+      background: radial-gradient(circle at 30% 30%, #ffe58a, #c98c14);
+      border-radius: 50%;
+      box-shadow: inset 0 0 3px rgba(0,0,0,0.4);
+    }
     .hud {
       display: flex;
       justify-content: space-between;
@@ -120,7 +164,13 @@
 
     function draw() {
       cells.forEach(c => c.className = 'cell');
-      snake.forEach(s => cells[index(s.x, s.y)].classList.add('snake'));
+      snake.forEach((s, i) => {
+        const classes = ['cell', 'snake'];
+        if (i === 0) classes.push('snake-head');
+        else if (i === snake.length - 1) classes.push('snake-tail');
+        else classes.push('snake-body');
+        cells[index(s.x, s.y)].className = classes.join(' ');
+      });
       cells[index(food.x, food.y)].classList.add('food');
     }
 
