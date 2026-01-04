@@ -45,6 +45,7 @@
     // Basic config
     const gridSize = 20;
     const cellSize = 1;
+    const boardSize = gridSize * cellSize;
     let speed = 6; // moves per second
     let score = 0;
     const scoreEl = document.getElementById('score');
@@ -73,11 +74,11 @@
     dirLight.shadow.mapSize.set(1024, 1024);
     scene.add(dirLight);
 
-    // Floor cube
-    const floorGeo = new THREE.BoxGeometry(gridSize * cellSize, 1, gridSize * cellSize);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f2a1d, roughness: 0.8, metalness: 0.05, wireframe: false });
+    // Cube board
+    const floorGeo = new THREE.BoxGeometry(boardSize, boardSize, boardSize);
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f2a1d, roughness: 0.8, metalness: 0.05 });
     const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.position.y = -0.5;
+    floor.position.y = -boardSize * 0.5;
     floor.receiveShadow = true;
     scene.add(floor);
 
