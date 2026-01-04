@@ -73,11 +73,11 @@
     dirLight.shadow.mapSize.set(1024, 1024);
     scene.add(dirLight);
 
-    // Floor grid
-    const floorGeo = new THREE.PlaneGeometry(gridSize * cellSize, gridSize * cellSize, gridSize, gridSize);
+    // Floor cube
+    const floorGeo = new THREE.BoxGeometry(gridSize * cellSize, 1, gridSize * cellSize);
     const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f2a1d, roughness: 0.8, metalness: 0.05, wireframe: false });
     const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.5;
     floor.receiveShadow = true;
     scene.add(floor);
 
