@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nokia Snake</title>
+  <style>
+    :root {
+      --bg: #0f380f;
+      --grid: #306230;
+      --snake: #8bac0f;
+      --food: #9bbc0f;
+      --text: #e0f2c1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0b2a0b;
+      font-family: 'Courier New', monospace;
+      color: var(--text);
+    }
+    .frame {
+      background: #1a4d1a;
+      padding: 16px;
+      border: 8px solid #0d2d0d;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      border-radius: 12px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      letter-spacing: 2px;
+      color: var(--text);
+      text-shadow: 0 0 4px #061a06;
+    }
+    #game {
+      display: grid;
+      grid-template-columns: repeat(20, 16px);
+      grid-template-rows: repeat(20, 16px);
+      gap: 1px;
+      background: var(--bg);
+      padding: 6px;
+      border: 4px solid #082008;
+    }
+    .cell { width: 16px; height: 16px; background: var(--grid); }
+    .snake { background: var(--snake); }
+    .food { background: var(--food); }
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 50px);
+      gap: 6px;
+      margin-top: 12px;
+      justify-content: center;
+    }
+    .btn {
+      padding: 10px;
+      background: #0f380f;
+      border: 2px solid #082008;
+      border-radius: 6px;
+      color: var(--text);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 0 2px 0 #082008;
+      transition: transform 0.05s;
+    }
+    .btn:active { transform: translateY(2px); box-shadow: 0 0px 0 #082008; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <h1>NOKIA SNAKE</h1>
+    <div class="hud">
+      <div>Score: <span id="score">0</span></div>
+      <div>Speed: <span id="speed">6</span></div>
+    </div>
+    <div id="game"></div>
+    <div class="controls">
+      <div></div><div class="btn" data-dir="ArrowUp">▲</div><div></div>
+      <div class="btn" data-dir="ArrowLeft">◀</div><div class="btn" data-dir="ArrowDown">▼</div><div class="btn" data-dir="ArrowRight">▶</div>
+    </div>
+  </div>
+  <script>
+    const size = 20;
+    const gameEl = document.getElementById('game');
+    const scoreEl = document.getElementById('score');
+    const speedEl = document.getElementById('speed');
+    let cells = [];
+    let snake = [{ x: 10, y: 10 }];
+    let dir = { x: 1, y: 0 };
+    let nextDir = { x: 1, y: 0 };
+    let food = spawnFood();
+    let score = 0;
+    let speed = 6; // moves per second
+    let lastTime = 0;
+    let accumulated = 0;
+
+    function createGrid() {
+      for (let i = 0; i < size * size; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        gameEl.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function index(x, y) {
+      return y * size + x;
+    }
+
+    function draw() {
+      cells.forEach(c => c.className = 'cell');
+      snake.forEach(s => cells[index(s.x, s.y)].classList.add('snake'));
+      cells[index(food.x, food.y)].classList.add('food');
+    }
+
+    function spawnFood() {
+      let pos;
+      do {
+        pos = { x: Math.floor(Math.random() * size), y: Math.floor(Math.random() * size) };
+      } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+      return pos;
+    }
+
+    function gameOver() {
+      alert('Game over! Score: ' + score);
+      snake = [{ x: 10, y: 10 }];
+      dir = { x: 1, y: 0 };
+      nextDir = { x: 1, y: 0 };
+      food = spawnFood();
+      score = 0;
+      speed = 6;
+      scoreEl.textContent = score;
+      speedEl.textContent = speed;
+    }
+
+    function update(delta) {
+      accumulated += delta;
+      const interval = 1000 / speed;
+      if (accumulated < interval) return;
+      accumulated = 0;
+      dir = nextDir;
+      const head = { x: (snake[0].x + dir.x + size) % size, y: (snake[0].y + dir.y + size) % size };
+      // collision with self
+      if (snake.some(s => s.x === head.x && s.y === head.y)) {
+        gameOver();
+        return;
+      }
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        speed = Math.min(15, 6 + Math.floor(score / 50));
+        food = spawnFood();
+        scoreEl.textContent = score;
+        speedEl.textContent = speed;
+      } else {
+        snake.pop();
+      }
+    }
+
+    function loop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const delta = timestamp - lastTime;
+      lastTime = timestamp;
+      update(delta);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const { key } = e;
+      if (key === 'ArrowUp' && dir.y !== 1) nextDir = { x: 0, y: -1 };
+      if (key === 'ArrowDown' && dir.y !== -1) nextDir = { x: 0, y: 1 };
+      if (key === 'ArrowLeft' && dir.x !== 1) nextDir = { x: -1, y: 0 };
+      if (key === 'ArrowRight' && dir.x !== -1) nextDir = { x: 1, y: 0 };
+    });
+
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.dir;
+        const evt = new KeyboardEvent('keydown', { key: k });
+        document.dispatchEvent(evt);
+      });
+    });
+
+    createGrid();
+    draw();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
