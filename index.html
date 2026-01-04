@@ -55,7 +55,8 @@
     scene.background = new THREE.Color(0x05060b);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(gridSize * 0.5, 18, gridSize * 1.2);
+    const cameraBasePos = new THREE.Vector3(gridSize * 0.5, 18, gridSize * 0.5 + 18);
+    camera.position.copy(cameraBasePos);
     camera.lookAt(new THREE.Vector3(gridSize * 0.5, 0, gridSize * 0.5));
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -180,10 +181,11 @@
         accumulator -= interval;
       }
 
-      // subtle camera sway
+      // subtle camera sway with clamp to keep board fully visible
       const t = time * 0.0003;
-      camera.position.x = gridSize * 0.5 + Math.cos(t) * 12;
-      camera.position.z = gridSize * 0.5 + Math.sin(t) * 12;
+      const swayRadius = 5; // keep small to prevent grid from leaving view
+      camera.position.x = cameraBasePos.x + Math.cos(t) * swayRadius;
+      camera.position.z = cameraBasePos.z + Math.sin(t) * swayRadius;
       camera.lookAt(new THREE.Vector3(gridSize * 0.5, 0, gridSize * 0.5));
 
       renderer.render(scene, camera);
