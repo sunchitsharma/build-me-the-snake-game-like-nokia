@@ -38,7 +38,7 @@
   <div class="ui">
     <h1>shivani's 3d snake</h1>
     <div class="stats">Score: <span id="score">0</span><br/>Speed: <span id="speed">6</span></div>
-    <div class="hint">Use arrow keys / WASD to move</div>
+    <div class="hint">Arrows / WASD to move, Q/E for up/down</div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script>
@@ -56,9 +56,9 @@
     scene.background = new THREE.Color(0x05060b);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const cameraBasePos = new THREE.Vector3(gridSize * 0.5, 18, gridSize * 0.5 + 18);
+    const cameraBasePos = new THREE.Vector3(gridSize * 0.5 + 18, gridSize * 0.5 + 18, gridSize * 0.5 + 18);
     camera.position.copy(cameraBasePos);
-    camera.lookAt(new THREE.Vector3(gridSize * 0.5, 0, gridSize * 0.5));
+    camera.lookAt(new THREE.Vector3(gridSize * 0.5, gridSize * 0.5, gridSize * 0.5));
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -69,21 +69,21 @@
     const ambient = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambient);
     const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(10, 25, 10);
+    dirLight.position.set(20, 30, 15);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(1024, 1024);
     scene.add(dirLight);
 
-    // Cube board
+    // Board cube
     const floorGeo = new THREE.BoxGeometry(boardSize, boardSize, boardSize);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f2a1d, roughness: 0.8, metalness: 0.05 });
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f2a1d, roughness: 0.8, metalness: 0.05, opacity: 0.2, transparent: true, side: THREE.BackSide });
     const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.position.y = -boardSize * 0.5;
+    floor.position.set(0, 0, 0);
     floor.receiveShadow = true;
     scene.add(floor);
 
     const gridHelper = new THREE.GridHelper(gridSize, gridSize, 0x1a663f, 0x0f3c26);
-    gridHelper.position.y = 0.001;
+    gridHelper.position.y = 0.001 - gridSize * 0.5;
     scene.add(gridHelper);
 
     // Snake materials
@@ -92,9 +92,9 @@
     const foodMat = new THREE.MeshStandardMaterial({ color: 0xffc857, emissive: 0x995a00, emissiveIntensity: 0.5, metalness: 0.2, roughness: 0.35 });
 
     // Snake state
-    let snake = [{ x: 10, y: 10 }];
-    let direction = { x: 1, y: 0 };
-    let nextDirection = { x: 1, y: 0 };
+    let snake = [{ x: 10, y: 10, z: 10 }];
+    let direction = { x: 1, y: 0, z: 0 };
+    let nextDirection = { x: 1, y: 0, z: 0 };
     let food = spawnFood();
 
     const snakeMeshes = [];
@@ -105,21 +105,27 @@
     function spawnFood() {
       let pos;
       do {
-        pos = { x: Math.floor(Math.random() * gridSize), y: Math.floor(Math.random() * gridSize) };
-      } while (snake.some(s => s.x === pos.x && s.y === pos.y));
+        pos = {
+          x: Math.floor(Math.random() * gridSize),
+          y: Math.floor(Math.random() * gridSize),
+          z: Math.floor(Math.random() * gridSize)
+        };
+      } while (snake.some(s => s.x === pos.x && s.y === pos.y && s.z === pos.z));
       return pos;
     }
 
     function resetGame() {
       alert(`Game over! Score: ${score}`);
-      snake = [{ x: 10, y: 10 }];
-      direction = { x: 1, y: 0 };
-      nextDirection = { x: 1, y: 0 };
+      snake = [{ x: 10, y: 10, z: 10 }];
+      direction = { x: 1, y: 0, z: 0 };
+      nextDirection = { x: 1, y: 0, z: 0 };
       food = spawnFood();
       score = 0;
       speed = 6;
       scoreEl.textContent = score;
       speedEl.textContent = speed;
+      updateSnakeGeometry();
+      updateFoodGeometry();
     }
 
     function updateSnakeGeometry() {
@@ -132,7 +138,11 @@
         const mat = idx === 0 ? snakeHeadMat : snakeMat;
         const mesh = new THREE.Mesh(geo, mat);
         mesh.castShadow = true;
-        mesh.position.set(segment.x * cellSize - gridSize * 0.5 + cellSize * 0.5, 0.4, segment.y * cellSize - gridSize * 0.5 + cellSize * 0.5);
+        mesh.position.set(
+          segment.x * cellSize - gridSize * 0.5 + cellSize * 0.5,
+          segment.y * cellSize - gridSize * 0.5 + cellSize * 0.5,
+          segment.z * cellSize - gridSize * 0.5 + cellSize * 0.5
+        );
         mesh.rotation.y = Math.sin((idx + performance.now() * 0.002)) * 0.05;
         snakeMeshes.push(mesh);
         scene.add(mesh);
@@ -140,22 +150,27 @@
     }
 
     function updateFoodGeometry() {
-      foodMesh.position.set(food.x * cellSize - gridSize * 0.5 + cellSize * 0.5, 0.35, food.y * cellSize - gridSize * 0.5 + cellSize * 0.5);
+      foodMesh.position.set(
+        food.x * cellSize - gridSize * 0.5 + cellSize * 0.5,
+        food.y * cellSize - gridSize * 0.5 + cellSize * 0.5,
+        food.z * cellSize - gridSize * 0.5 + cellSize * 0.5
+      );
     }
 
     function tickMove() {
       direction = nextDirection;
       const head = {
         x: (snake[0].x + direction.x + gridSize) % gridSize,
-        y: (snake[0].y + direction.y + gridSize) % gridSize
+        y: (snake[0].y + direction.y + gridSize) % gridSize,
+        z: (snake[0].z + direction.z + gridSize) % gridSize
       };
       // self collision
-      if (snake.some(s => s.x === head.x && s.y === head.y)) {
+      if (snake.some(s => s.x === head.x && s.y === head.y && s.z === head.z)) {
         resetGame();
         return;
       }
       snake.unshift(head);
-      if (head.x === food.x && head.y === food.y) {
+      if (head.x === food.x && head.y === food.y && head.z === food.z) {
         score += 10;
         speed = Math.min(15, 6 + Math.floor(score / 50));
         scoreEl.textContent = score;
@@ -184,10 +199,11 @@
 
       // subtle camera sway with clamp to keep board fully visible
       const t = time * 0.0003;
-      const swayRadius = 5; // keep small to prevent grid from leaving view
+      const swayRadius = 5;
       camera.position.x = cameraBasePos.x + Math.cos(t) * swayRadius;
+      camera.position.y = cameraBasePos.y + Math.sin(t * 0.7) * 2;
       camera.position.z = cameraBasePos.z + Math.sin(t) * swayRadius;
-      camera.lookAt(new THREE.Vector3(gridSize * 0.5, 0, gridSize * 0.5));
+      camera.lookAt(new THREE.Vector3(gridSize * 0.5, gridSize * 0.5, gridSize * 0.5));
 
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
@@ -195,21 +211,27 @@
 
     // Controls
     const keyMap = {
-      ArrowUp: { x: 0, y: -1 },
-      ArrowDown: { x: 0, y: 1 },
-      ArrowLeft: { x: -1, y: 0 },
-      ArrowRight: { x: 1, y: 0 },
-      w: { x: 0, y: -1 },
-      s: { x: 0, y: 1 },
-      a: { x: -1, y: 0 },
-      d: { x: 1, y: 0 }
+      ArrowUp: { x: 0, y: 0, z: -1 },
+      ArrowDown: { x: 0, y: 0, z: 1 },
+      ArrowLeft: { x: -1, y: 0, z: 0 },
+      ArrowRight: { x: 1, y: 0, z: 0 },
+      w: { x: 0, y: 0, z: -1 },
+      s: { x: 0, y: 0, z: 1 },
+      a: { x: -1, y: 0, z: 0 },
+      d: { x: 1, y: 0, z: 0 },
+      q: { x: 0, y: 1, z: 0 },
+      e: { x: 0, y: -1, z: 0 }
     };
 
     document.addEventListener('keydown', (e) => {
       const dir = keyMap[e.key];
       if (!dir) return;
-      // prevent reversing directly
-      if (dir.x === -direction.x && dir.y === -direction.y) return;
+      // prevent reversing directly along same axis
+      if ((dir.x !== 0 && dir.x === -direction.x) ||
+          (dir.y !== 0 && dir.y === -direction.y) ||
+          (dir.z !== 0 && dir.z === -direction.z)) {
+        return;
+      }
       nextDirection = dir;
     });
 
